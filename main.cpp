@@ -57,7 +57,12 @@ Token Token_stream::get()
 
     char ch;
     std::cin >> ch;    // note that >> skips whitespace (space, newline, tab, etc.)
-    
+    if (ch == 'h' || ch == 'H'){
+        std::cout << "Welcome to our simple calculator.\n";
+        std::cout << "Please enter expressions using floating-point numbers.\n";
+        std::cout << "[+, -, *, /]operators, [x]quit, [=]print result\n";
+        return 0;
+    }
     switch (ch) {
     case '=':    // for "print"
     case 'x':    // for "quit"
@@ -98,7 +103,7 @@ double primary()
         double d = expression();
         t = ts.get();
         // if (t.kind != ')') error("')' expected); // error(3)
-        if (t.kind != ')') std::cout<<"')' expected";
+        if (t.kind != ')') std::cout<<"')' expected"<<std::endl;
         return d;
     }
     case '-': 
@@ -110,25 +115,25 @@ double primary()
 }
 
 double factorial(){
-    double lvalue = primary();
+    double left = primary();
     Token t = ts.get();
     while(true){
         if(t.kind == '!'){
             long long result = 1;
-            for(int i = 1; i <= lvalue; i++) result *= i;
-            lvalue = result;
+            for(int i = 1; i <= left; i++) result *= i;
+            left = result;
             t = ts.get();
             break;
         }
         else{
             ts.putback(t);
-            return lvalue;
+            return left;
         }
     }
 }
 
 double power(){
-    double lvalue = factorial();
+    double left = factorial();
     Token t = ts.get();
     while(true){
         switch (t.kind)
@@ -136,21 +141,21 @@ double power(){
         case '!':
         {
             long long result = 1;
-            for(int i = 1; i <= lvalue; i++) result *= i;
-            lvalue = result;
+            for(int i = 1; i <= left; i++) result *= i;
+            left = result;
             t = ts.get();
             break;
         }
         case '^':
         {
-            lvalue = pow(lvalue, factorial());
+            left = pow(left, factorial());
             t = ts.get();
             break;
         }
         
         default:
             ts.putback(t);
-            return lvalue;
+            return left;
         }
     }
 }
@@ -160,7 +165,7 @@ double power(){
 // deal with *, /, and %
 double term()
 {
-    double lvalue = primary();
+    double left = primary();
     Token t = ts.get();        // get the next token from token stream
 
     while (true) {
@@ -168,19 +173,19 @@ double term()
         case '!':
         {
             int result = 1;
-            for(int i = 1; i <= lvalue; i++) result *= i;
-            lvalue = result;
+            for(int i = 1; i <= left; i++) result *= i;
+            left = result;
             t = ts.get();
             break;
         }
         case '^':
         {
-            lvalue = pow(lvalue,power());
+            left = pow(left,power());
             t = ts.get();
             break;
         }
         case '*':
-            lvalue *= primary();
+            left *= primary();
             t = ts.get();
             // logic error(2)
             break;
@@ -188,13 +193,13 @@ double term()
         {
             double d = primary();
             if (d == 0) std::cout<<"divide by zero"<<std::endl;
-            lvalue /= d;
+            left /= d;
             t = ts.get();
             break;
         }
         default:
             ts.putback(t);     // put t back into the token stream
-            return lvalue;
+            return left;
         }
     }
 }
