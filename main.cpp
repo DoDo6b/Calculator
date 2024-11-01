@@ -1,11 +1,9 @@
 
 #include <iostream>
 #include <string>
-#include <cassert>
 
 //------------------------------------------------------------------------------
 
-// lass Token { // error(1)
 class Token {
 public:
     char kind;        // what kind of token
@@ -41,7 +39,7 @@ Token_stream::Token_stream()
 // The putback() member function puts its argument back into the Token_stream's buffer:
 void Token_stream::putback(Token t)
 {
-    if (full) std::cout<<"putback() into a full buffer";
+    if (full) std::cout<<"putback() into a full buffer"<<std::endl;
     buffer = t;       // copy t to buffer
     full = true;      // buffer is now full
 }
@@ -59,11 +57,11 @@ Token Token_stream::get()
 
     char ch;
     std::cin >> ch;    // note that >> skips whitespace (space, newline, tab, etc.)
-
+    
     switch (ch) {
     case '=':    // for "print"
     case 'x':    // for "quit"
-    case '(': case ')': case '+': case '-': case '*': case '/':
+    case '(': case ')': case '!': case '^': case '*': case '+': case '-': case '/':
         return Token(ch);        // let each character represent itself
     case '.':
     case '0': case '1': case '2': case '3': case '4':
@@ -76,7 +74,7 @@ Token Token_stream::get()
         return Token('8', val);   // let '8' represent "a number"
     }
     default:
-        std::cout<<"Bad token";
+        std::cout<<"Bad symbol"<<std::endl;
     }
 }
 
@@ -103,10 +101,57 @@ double primary()
         if (t.kind != ')') std::cout<<"')' expected";
         return d;
     }
+    case '-': 
+        return -primary();
+
     case '8':            // we use '8' to represent a number
         return t.value;  // return the number's value
-    default:
-        std::cout<<"primary expected";
+    }
+}
+
+double factorial(){
+    double lvalue = primary();
+    Token t = ts.get();
+    while(true){
+        if(t.kind == '!'){
+            long long result = 1;
+            for(int i = 1; i <= lvalue; i++) result *= i;
+            lvalue = result;
+            t = ts.get();
+            break;
+        }
+        else{
+            ts.putback(t);
+            return lvalue;
+        }
+    }
+}
+
+double power(){
+    double lvalue = factorial();
+    Token t = ts.get();
+    while(true){
+        switch (t.kind)
+        {
+        case '!':
+        {
+            long long result = 1;
+            for(int i = 1; i <= lvalue; i++) result *= i;
+            lvalue = result;
+            t = ts.get();
+            break;
+        }
+        case '^':
+        {
+            lvalue = pow(lvalue, factorial());
+            t = ts.get();
+            break;
+        }
+        
+        default:
+            ts.putback(t);
+            return lvalue;
+        }
     }
 }
 
@@ -115,27 +160,41 @@ double primary()
 // deal with *, /, and %
 double term()
 {
-    double left = primary();
+    double lvalue = primary();
     Token t = ts.get();        // get the next token from token stream
 
     while (true) {
         switch (t.kind) {
+        case '!':
+        {
+            int result = 1;
+            for(int i = 1; i <= lvalue; i++) result *= i;
+            lvalue = result;
+            t = ts.get();
+            break;
+        }
+        case '^':
+        {
+            lvalue = pow(lvalue,power());
+            t = ts.get();
+            break;
+        }
         case '*':
-            left *= primary();
+            lvalue *= primary();
             t = ts.get();
             // logic error(2)
             break;
         case '/':
         {
             double d = primary();
-            if (d == 0) std::cout<<"divide by zero";
-            left /= d;
+            if (d == 0) std::cout<<"divide by zero"<<std::endl;
+            lvalue /= d;
             t = ts.get();
             break;
         }
         default:
             ts.putback(t);     // put t back into the token stream
-            return left;
+            return lvalue;
         }
     }
 }
