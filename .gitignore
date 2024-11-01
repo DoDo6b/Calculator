@@ -2,6 +2,7 @@
 .vscode
 main
 main.dSYM
+reference
 
 # Prerequisites
 *.d
