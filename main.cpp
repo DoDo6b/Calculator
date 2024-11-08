@@ -1,261 +1,408 @@
-
 #include <iostream>
 #include <string>
+#include <vector>
+#include <stdexcept>
 
-//------------------------------------------------------------------------------
+const char number = '8';
+const char quit = 'q';
+const char print = ';';
+const char name = 'a';
+const char let = 'L';
+const char help = '?';
+const char c_sin = 's';
+const char c_cos = 'c';
 
-class Token {
+const std::string prompt = "> ";
+const std::string result = "= ";
+const std::string declkey = "let";
+
+const char square_root = '@';
+const char exponent = '^';
+const std::string sqrtkey = "sqrt";
+const std::string expkey = "pow";
+const std::string sinkey = "sin";
+const std::string coskey = "cos";
+const std::string quitkey = "quit";
+const std::string helpkey = "help";
+
+class Token{
 public:
-    char kind;        // what kind of token
-    double value;     // for numbers: a value 
-    Token(char ch)    // make a Token from a char
-        :kind(ch), value(0) { }
-    Token(char ch, double val)     // make a Token from a char and a double
-        :kind(ch), value(val) { }
+    char kind;
+    double value;
+    std::string name;
+
+    Token(char k) : kind{k}, value{0} { }
+    Token(char k, double v) : kind{k}, value{v} { }
+    Token(char k, std::string n) : kind{k}, value{0}, name{n} { }
 };
 
-//------------------------------------------------------------------------------
-
-class Token_stream {
+class Token_stream{
 public:
-    Token_stream();   // make a Token_stream that reads from cin
-    Token get();      // get a Token (get() is defined elsewhere)
-    void putback(Token t);    // put a Token back
+    Token get();
+    void putback(Token t);
+    void ignore(char c);
 private:
-    bool full;        // is there a Token in the buffer?
-    Token buffer;     // here is where we keep a Token put back using putback()
+    bool exists {false};
+    Token buffer {'0'};
 };
 
-//------------------------------------------------------------------------------
+void Token_stream::ignore(char c){
+    if(exists && c == buffer.kind){
+        exists = false;
+        return;
+    }
+    exists = false;
 
-// The constructor just sets full to indicate that the buffer is empty:
-Token_stream::Token_stream()
-    :full(false), buffer(0)    // no Token in buffer
-{
+    char ch = 0;
+    while(std::cin >> ch)
+        if(ch == c) return;
 }
 
-//------------------------------------------------------------------------------
+void Token_stream::putback(Token token){
+    buffer = token;
+    exists = true;
+};
 
-// The putback() member function puts its argument back into the Token_stream's buffer:
-void Token_stream::putback(Token t)
-{
-    if (full) std::cout<<"putback() into a full buffer"<<std::endl;
-    buffer = t;       // copy t to buffer
-    full = true;      // buffer is now full
-}
-
-//------------------------------------------------------------------------------
-
-// Token get() // error(2)
-Token Token_stream::get()
-{
-    if (full) {       // do we already have a Token ready?
-        // remove token from buffer
-        full = false;
+Token Token_stream::get(){
+    if(exists){
+        exists = false;
         return buffer;
     }
 
     char ch;
-    std::cin >> ch;    // note that >> skips whitespace (space, newline, tab, etc.)
-    if (ch == 'h' || ch == 'H'){
-        std::cout << "Welcome to our simple calculator.\n";
-        std::cout << "Please enter expressions using floating-point numbers.\n";
-        std::cout << "[+, -, *, /]operators, [x]quit, [=]print result\n";
-        return 0;
-    }
-    switch (ch) {
-    case '=':    // for "print"
-    case 'x':    // for "quit"
-    case '(': case ')': case '!': case '^': case '*': case '+': case '-': case '/':
-        return Token(ch);        // let each character represent itself
-    case '.':
-    case '0': case '1': case '2': case '3': case '4':
-        // case '5': case '6': case '7': case '9': // logic error(1)
-    case '5': case '6': case '7': case '8': case '9':
-    {
-        std::cin.putback(ch);         // put digit back into the input stream
-        double val;
-        std::cin >> val;              // read a floating-point number
-        return Token('8', val);   // let '8' represent "a number"
-    }
-    default:
-        std::cout<<"Bad symbol"<<std::endl;
-    }
-}
+    std::cin.get(ch);
 
-//------------------------------------------------------------------------------
+    while (isspace(ch) && ch != '\n') std::cin.get(ch);
 
-Token_stream ts;        // provides get() and putback() 
-
-//------------------------------------------------------------------------------
-
-double expression();    // declaration so that primary() can call expression()
-
-//------------------------------------------------------------------------------
-
-// deal with numbers and parentheses
-double primary()
-{
-    Token t = ts.get();
-    switch (t.kind) {
-    case '(':    // handle '(' expression ')'
-    {
-        double d = expression();
-        t = ts.get();
-        // if (t.kind != ')') error("')' expected); // error(3)
-        if (t.kind != ')') std::cout<<"')' expected"<<std::endl;
-        return d;
-    }
-    case '-': 
-        return -primary();
-
-    case '8':            // we use '8' to represent a number
-        return t.value;  // return the number's value
-    }
-}
-
-double factorial(){
-    double left = primary();
-    Token t = ts.get();
-    while(true){
-        if(t.kind == '!'){
-            long long result = 1;
-            for(int i = 1; i <= left; i++) result *= i;
-            left = result;
-            t = ts.get();
-            break;
-        }
-        else{
-            ts.putback(t);
-            return left;
-        }
-    }
-}
-
-double power(){
-    double left = factorial();
-    Token t = ts.get();
-    while(true){
-        switch (t.kind)
-        {
+    switch(ch){
+        case '\n':
+            return Token{print};
+        case print:
+        case quit:
+        case help:
+        case '(':
+        case ')':
+        case '{':
+        case '}':
         case '!':
-        {
-            long long result = 1;
-            for(int i = 1; i <= left; i++) result *= i;
-            left = result;
-            t = ts.get();
-            break;
-        }
-        case '^':
-        {
-            left = pow(left, factorial());
-            t = ts.get();
-            break;
-        }
-        
-        default:
-            ts.putback(t);
-            return left;
-        }
-    }
-}
-
-//------------------------------------------------------------------------------
-
-// deal with *, /, and %
-double term()
-{
-    double left = primary();
-    Token t = ts.get();        // get the next token from token stream
-
-    while (true) {
-        switch (t.kind) {
-        case '!':
-        {
-            int result = 1;
-            for(int i = 1; i <= left; i++) result *= i;
-            left = result;
-            t = ts.get();
-            break;
-        }
-        case '^':
-        {
-            left = pow(left,power());
-            t = ts.get();
-            break;
-        }
-        case '*':
-            left *= primary();
-            t = ts.get();
-            // logic error(2)
-            break;
-        case '/':
-        {
-            double d = primary();
-            if (d == 0) std::cout<<"divide by zero"<<std::endl;
-            left /= d;
-            t = ts.get();
-            break;
-        }
-        default:
-            ts.putback(t);     // put t back into the token stream
-            return left;
-        }
-    }
-}
-
-//------------------------------------------------------------------------------
-
-// deal with + and -
-double expression()
-{
-    // double left = term(;      // read and evaluate a Term // error(4)
-    double left = term();      // read and evaluate a Term
-    Token t = ts.get();        // get the next token from token stream
-
-    while (true) {
-        switch (t.kind) {
         case '+':
-            left += term();    // evaluate Term and add
-            t = ts.get();
-            break;
         case '-':
-            // left += term();    // evaluate Term and subtract // logic error(3)
-            left -= term();    // evaluate Term and subtract
-            t = ts.get();
-            break;
+        case '*':
+        case '/':
+        case '%':
+        case '=':
+        case ',':
+            return Token { ch };
+        case '.':
+        case '0': case '1': case '2': case '3': case '4':
+        case '5': case '6': case '7': case '8': case '9':
+            {
+                std::cin.putback(ch);
+                double val;
+                std::cin >> val;
+                return Token { number, val };  
+            }
         default:
-            ts.putback(t);     // put t back into the token stream
-            return left;       // finally: no more + or -: return the answer
+            if(isalpha(ch)){
+                std::string s;
+                s += ch;
+                while(std::cin.get(ch) && ((isalpha(ch) || isdigit(ch) || ch == '_')))
+                    s += ch;
+                std::cin.putback(ch);
+                if(s == declkey) return Token{let};
+                else if(s == sqrtkey) return Token{square_root};
+                else if(s == expkey) return Token{exponent};
+                else if(s == sinkey) return Token{c_sin};
+                else if(s == coskey) return Token{c_cos};
+                else if(s == quitkey) return Token{quit};
+                else if(s == helpkey) return Token{help};
+                else return Token{name, s};
+            }
+            std::runtime_error("Bad token");
+    }
+};
+
+class Variable{
+public:
+    std::string name;
+    double value;
+    bool constant;
+    Variable(std::string n, double v, bool c = false)
+        : name{n}, value{v}, constant{c} { }
+};
+
+class Symbol_table{
+    std::vector<Variable> var_table;
+public:
+    bool is_declared(std::string);
+    double get_value(std::string);
+    double set_value(std::string, double);
+    double define_name(std::string, double, bool con = false);
+};
+
+bool Symbol_table::is_declared(std::string variable){
+    for(const Variable& var : var_table)
+        if (var.name == variable) return true;
+    return false;
+}
+
+double Symbol_table::get_value(std::string name){
+    for(const Variable& var : var_table)
+        if(var.name == name) return var.value;
+    std::runtime_error("get: undefined variable");
+}
+
+double Symbol_table::set_value(std::string name, double value){
+    for(Variable& var : var_table)
+        if(var.name == name){
+            if(var.constant) std::runtime_error("Can't overwrite constant variable");
+            var.value = value;
+            return value;
+        }
+    std::runtime_error("set: undefined variable");
+}
+
+double Symbol_table::define_name(std::string name, double value, bool con){
+    if(is_declared(name)) std::runtime_error("declared twice");
+    var_table.push_back(Variable{name, value, con});
+    return value;
+}
+
+Symbol_table symbolt;
+
+Token_stream tstream;
+
+double expression();
+
+double calc_sqrt(){
+    char ch;
+    if(std::cin.get(ch) && ch != '(') std::runtime_error("'(' expected");
+    std::cin.putback(ch);
+    double expr = expression();
+    if(expr < 0) std::runtime_error("sqrt: negative val is imaginary");
+    return sqrt(expr);
+}
+
+double calc_pow(){
+    Token token = tstream.get();
+    if(token.kind != '(') std::runtime_error("'(' expected");
+    double base = expression();
+    token = tstream.get();
+    if(token.kind != ',') std::runtime_error("',' =");
+    double power = expression();
+    token = tstream.get();
+    if(token.kind != ')') std::runtime_error("')' expected");
+    return pow(base, power);
+}
+
+double calc_sin(){
+    char ch;
+    if(std::cin.get(ch) && ch != '(') std::runtime_error("'(' expected");
+    std::cin.putback(ch);
+    double expr = expression();
+    if(expr == 0 || expr == 180) return 0;
+    return sin(expr*M_1_PI/18);
+}
+
+double calc_cos(){
+    char ch;
+    if(std::cin.get(ch) && ch != '(') std::runtime_error("'(' expected");
+    std::cin.putback(ch);
+    double expr = expression();
+    if(expr == 90 || expr == 270) return 0;
+    return cos(expr*M_1_PI/18);
+}
+
+double handle_variable(Token& token){
+    Token token2 = tstream.get();
+    if(token2.kind == '=')
+        return symbolt.set_value(token.name, expression());
+    else{
+        tstream.putback(token2);
+        return symbolt.get_value(token.name);
+    }
+}
+
+double primary(){
+    Token token = tstream.get();
+    switch(token.kind){
+        case '(':
+            {
+                double expr = expression();
+                token = tstream.get();
+                if(token.kind != ')') std::runtime_error("')' expected");
+                return expr;
+            }
+        case '{':
+            {
+                double expr = expression();
+                token = tstream.get();
+                if (token.kind != '}') std::runtime_error("'}' expected");
+                return expr;
+            }
+        case number: 
+            return token.value;
+        case name:
+            return handle_variable(token);
+        case '-':
+            return -primary();
+        case '+':
+            return primary();
+        case square_root:
+            return calc_sqrt();
+        case exponent:
+            return calc_pow();
+        case c_sin:
+            return calc_sin();
+        case c_cos:
+            return calc_cos();
+        default:
+            std::runtime_error("primary expected");
+    }
+}
+
+double secondary(){
+    double lvalue = primary();
+    Token token = tstream.get();
+
+    while(true){
+        switch(token.kind){
+            case '!':
+                if (lvalue == 0) return 1;
+                for (int i = lvalue - 1; i > 0; --i) lvalue *= i;
+                token = tstream.get();
+                break;
+            default:
+                tstream.putback(token);
+                return lvalue;
         }
     }
 }
 
-//------------------------------------------------------------------------------
+double term(){
+    double lvalue = secondary();
+    Token token = tstream.get();
+
+    while(true){
+        switch(token.kind){
+            case '*':
+                lvalue *= secondary();
+                token = tstream.get();
+                break;
+            case '/':
+                {
+                    double stepback = secondary();
+                    if (stepback == 0) std::runtime_error("divide by zero");
+                    lvalue /= stepback;
+                    token = tstream.get();
+                    break;
+                }
+            case '%':
+                {
+                    double stepback = secondary();
+                    if (stepback == 0) std::runtime_error("%: divide by zero");
+                    lvalue = fmod(lvalue, stepback);
+                    token = tstream.get();
+                    break;
+                }
+            default:
+                tstream.putback(token); 
+                return lvalue;
+        }
+    }
+}
+
+double expression(){
+    double lvalue = term();
+    Token token = tstream.get();
+
+    while(true){
+        switch(token.kind){
+            case '+':
+                lvalue += term();
+                token = tstream.get();
+                break;
+            case '-':
+                lvalue -= term();
+                token = tstream.get();
+                break;
+            default:
+                tstream.putback(token);
+                return lvalue;
+        }
+    }
+}
+
+double definition(){
+    Token token = tstream.get();
+    if(token.kind != name) std::runtime_error("name expected in declaration");
+    std::string var_name = token.name;
+
+    Token token2 = tstream.get();
+    if(token2.kind != '=') std::runtime_error("= missing in declaration");
+
+    double expr = expression();
+    symbolt.define_name(var_name, expr);
+    return expr;
+}
+
+double declaration(){
+    Token token = tstream.get();
+    switch(token.kind){
+        case let:
+            return definition();
+        default:
+            tstream.putback(token);
+            return expression();
+    }
+}
+
+void print_help(){
+    std::cout << "FALT Calculator Manual\n"
+         << std::endl
+         << "Enter any expression. Type ';' for \n"
+         << "Square root can be calculated with 'sqrt' or 'pow'\n"
+         << "For variable declaration use: 'let'\n";
+}
+
+void clean_up_mess(){
+    tstream.ignore(print);
+}
+
+void calculate(){
+    while(std::cin)
+        try{
+            std::cout << prompt;
+            Token token = tstream.get();
+            while(token.kind == print) token = tstream.get();
+            if(token.kind == help) print_help();
+            else if(token.kind == quit) return;
+            else{
+                tstream.putback(token);
+                std::cout << result << declaration() << '\n';
+            }
+        }
+        catch(std::exception& e){
+            std::cerr << e.what() << '\n';
+            clean_up_mess();
+        }
+} 
 
 int main()
-try
-{
-    std::cout << "Welcome to our simple calculator.\n";
-    std::cout << "Please enter expressions using floating-point numbers.\n";
-    std::cout << "[+, -, *, /]operators, [x]quit, [=]print result\n";
-    // error(5)
-    double val = 0;
-    while (std::cin) {
-        Token t = ts.get();
-        if (t.kind == 'x') break; // 'x' for quit
-        if (t.kind == '=')        // '=' for "print now"
-            std::cout << "=" << val << '\n';
-        else
-            ts.putback(t);
-        val = expression();
-    }
+try{
+    symbolt.define_name("pi", M_1_PI*10, true);
+    symbolt.define_name("e", M_E, true);      
+
+    std::cout << "Enter expression (? for help)\n";
+
+    calculate();
+    return 0;
 }
-catch (std::exception& e) {
-    std::cerr << "error: " << e.what() << '\n';
+catch(std::exception& e){
+    std::cerr << "Error: " << e.what() << '\n';
     return 1;
 }
-catch (...) {
-    std::cerr << "Oops: unknown exception!\n";
+catch(...){
+    std::cerr << "Unknown error\n";
     return 2;
 }
