@@ -118,7 +118,7 @@ Token Token_stream::get(){
                 else if(s == helpkey) return Token{help};
                 else return Token{name, s};
             }
-            std::runtime_error("Bad token");
+            throw std::runtime_error("Bad token");
     }
 };
 
@@ -149,21 +149,21 @@ bool Symbol_table::is_declared(std::string variable){
 double Symbol_table::get_value(std::string name){
     for(const Variable& var : var_table)
         if(var.name == name) return var.value;
-    std::runtime_error("get: undefined variable");
+    throw std::runtime_error("undefined variable");
 }
 
 double Symbol_table::set_value(std::string name, double value){
     for(Variable& var : var_table)
         if(var.name == name){
-            if(var.constant) std::runtime_error("Can't overwrite constant variable");
+            if(var.constant) throw std::runtime_error("Can't overwrite constant variable");
             var.value = value;
             return value;
         }
-    std::runtime_error("set: undefined variable");
+    throw std::runtime_error("undefined variable");
 }
 
 double Symbol_table::define_name(std::string name, double value, bool con){
-    if(is_declared(name)) std::runtime_error("declared twice");
+    if(is_declared(name)) throw std::runtime_error("declared twice");
     var_table.push_back(Variable{name, value, con});
     return value;
 }
@@ -176,41 +176,41 @@ double expression();
 
 double calc_sqrt(){
     char ch;
-    if(std::cin.get(ch) && ch != '(') std::runtime_error("'(' expected");
+    if(std::cin.get(ch) && ch != '(') throw std::runtime_error("'(' expected");
     std::cin.putback(ch);
     double expr = expression();
-    if(expr < 0) std::runtime_error("sqrt: negative val is imaginary");
+    if(expr < 0) throw std::runtime_error("sqrt: val < 0");
     return sqrt(expr);
 }
 
 double calc_pow(){
     Token token = tstream.get();
-    if(token.kind != '(') std::runtime_error("'(' expected");
+    if(token.kind != '(') throw std::runtime_error("'(' expected");
     double base = expression();
     token = tstream.get();
-    if(token.kind != ',') std::runtime_error("',' =");
+    if(token.kind != ',') throw std::runtime_error("',' =");
     double power = expression();
     token = tstream.get();
-    if(token.kind != ')') std::runtime_error("')' expected");
+    if(token.kind != ')') throw std::runtime_error("')' expected");
     return pow(base, power);
 }
 
 double calc_sin(){
     char ch;
-    if(std::cin.get(ch) && ch != '(') std::runtime_error("'(' expected");
+    if(std::cin.get(ch) && ch != '(') throw std::runtime_error("'(' expected");
     std::cin.putback(ch);
     double expr = expression();
     if(expr == 0 || expr == 180) return 0;
-    return sin(expr*M_1_PI/18);
+    return sin(expr*M_PI/180);
 }
 
 double calc_cos(){
     char ch;
-    if(std::cin.get(ch) && ch != '(') std::runtime_error("'(' expected");
+    if(std::cin.get(ch) && ch != '(') throw std::runtime_error("'(' expected");
     std::cin.putback(ch);
     double expr = expression();
     if(expr == 90 || expr == 270) return 0;
-    return cos(expr*M_1_PI/18);
+    return cos(expr*M_PI/180);
 }
 
 double handle_variable(Token& token){
@@ -230,14 +230,14 @@ double primary(){
             {
                 double expr = expression();
                 token = tstream.get();
-                if(token.kind != ')') std::runtime_error("')' expected");
+                if(token.kind != ')') throw std::runtime_error("')' expected");
                 return expr;
             }
         case '{':
             {
                 double expr = expression();
                 token = tstream.get();
-                if (token.kind != '}') std::runtime_error("'}' expected");
+                if (token.kind != '}') throw std::runtime_error("'}' expected");
                 return expr;
             }
         case number: 
@@ -257,7 +257,7 @@ double primary(){
         case c_cos:
             return calc_cos();
         default:
-            std::runtime_error("primary expected");
+            throw std::runtime_error("primary expected");
     }
 }
 
@@ -292,7 +292,7 @@ double term(){
             case '/':
                 {
                     double stepback = secondary();
-                    if (stepback == 0) std::runtime_error("divide by zero");
+                    if (stepback == 0) throw std::runtime_error("division by zero");
                     lvalue /= stepback;
                     token = tstream.get();
                     break;
@@ -300,7 +300,7 @@ double term(){
             case '%':
                 {
                     double stepback = secondary();
-                    if (stepback == 0) std::runtime_error("%: divide by zero");
+                    if (stepback == 0) throw std::runtime_error("division by zero");
                     lvalue = fmod(lvalue, stepback);
                     token = tstream.get();
                     break;
@@ -333,24 +333,24 @@ double expression(){
     }
 }
 
-double definition(){
+double declaration(){
     Token token = tstream.get();
-    if(token.kind != name) std::runtime_error("name expected in declaration");
+    if(token.kind != name) throw std::runtime_error("name expected in declaration");
     std::string var_name = token.name;
 
     Token token2 = tstream.get();
-    if(token2.kind != '=') std::runtime_error("= missing in declaration");
+    if(token2.kind != '=') throw std::runtime_error("= missing in declaration");
 
-    double expr = expression();
-    symbolt.define_name(var_name, expr);
-    return expr;
+    double val = expression();
+    symbolt.define_name(var_name, val);
+    return val;
 }
 
-double declaration(){
+double enterpoint(){
     Token token = tstream.get();
     switch(token.kind){
         case let:
-            return definition();
+            return declaration();
         default:
             tstream.putback(token);
             return expression();
@@ -360,13 +360,9 @@ double declaration(){
 void print_help(){
     std::cout << "FALT Calculator Manual\n"
          << std::endl
-         << "Enter any expression. Type ';' for \n"
+         << "Enter any expression. Type ';' for print\n"
          << "Square root can be calculated with 'sqrt' or 'pow'\n"
          << "For variable declaration use: 'let'\n";
-}
-
-void clean_up_mess(){
-    tstream.ignore(print);
 }
 
 void calculate(){
@@ -379,21 +375,21 @@ void calculate(){
             else if(token.kind == quit) return;
             else{
                 tstream.putback(token);
-                std::cout << result << declaration() << '\n';
+                std::cout << result << enterpoint() << std::endl;
             }
         }
         catch(std::exception& e){
-            std::cerr << e.what() << '\n';
-            clean_up_mess();
+            std::cerr << e.what() << std::endl;
+            tstream.ignore(print);
         }
 } 
 
 int main()
 try{
-    symbolt.define_name("pi", M_1_PI*10, true);
+    symbolt.define_name("pi", M_PI*10, true);
     symbolt.define_name("e", M_E, true);      
 
-    std::cout << "Enter expression (? for help)\n";
+    std::cout << "Enter expression (?/help for help)\n";
 
     calculate();
     return 0;
