@@ -2,7 +2,7 @@
 .vscode
 main
 main.dSYM
-reference
+legacy
 
 # Prerequisites
 *.d
