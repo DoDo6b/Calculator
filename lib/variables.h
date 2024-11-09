@@ -13,8 +13,8 @@ public:
 class Symbol_table{
     std::vector<Variable> var_table;
 public:
-    bool is_declared(std::string);
-    double get_value(std::string);
+    bool is_declared(std::string) const;
+    double get_value(std::string) const;
     double set_value(std::string, double);
     double define_name(std::string, double, bool con = false);
 };

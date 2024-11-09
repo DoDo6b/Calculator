@@ -1,12 +1,12 @@
 #include "variables.h"
 
-bool Symbol_table::is_declared(std::string variable){
+bool Symbol_table::is_declared(std::string variable) const {
     for(const Variable& var : var_table)
         if (var.name == variable) return true;
     return false;
 }
 
-double Symbol_table::get_value(std::string name){
+double Symbol_table::get_value(std::string name) const {
     for(const Variable& var : var_table)
         if(var.name == name) return var.value;
     throw std::runtime_error("undefined variable");
