@@ -23,4 +23,4 @@ private:
     Token buffer {'0'};
 };
 
-Token_stream tstream;
+extern Token_stream tstream;

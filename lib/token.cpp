@@ -76,3 +76,5 @@ Token Token_stream::get(){
             throw std::runtime_error("Bad token");
     }
 };
+
+Token_stream tstream;

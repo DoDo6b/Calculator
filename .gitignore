@@ -3,6 +3,7 @@
 main
 main.dSYM
 legacy
+build
 
 # Prerequisites
 *.d

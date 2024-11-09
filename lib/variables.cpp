@@ -27,3 +27,5 @@ double Symbol_table::define_name(std::string name, double value, bool c){
     var_table.push_back(Variable{name, value, c});
     return value;
 }
+
+Symbol_table symbolt;

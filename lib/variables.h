@@ -19,4 +19,4 @@ public:
     double define_name(std::string, double, bool con = false);
 };
 
-Symbol_table symbolt;
+extern Symbol_table symbolt;
