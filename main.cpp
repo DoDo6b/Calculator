@@ -43,7 +43,7 @@ void calculate(){
 
 int main()
 try{
-    symbolt.define_name("pi", M_PI*10, true);
+    symbolt.define_name("pi", M_PI, true);
     symbolt.define_name("e", M_E, true);      
 
     std::cout << "Enter expression (?/help for help)\n";
