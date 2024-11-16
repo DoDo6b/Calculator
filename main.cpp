@@ -4,13 +4,13 @@
 #include "lib/grammary.h"
 
 double enterpoint(){
-    Token token = tstream.get();
+    Token token = tstream.get();    //get the token from buffer
     switch(token.kind){
-        case let:
+        case let:   //declaring variable
             return declaration();
         default:
-            tstream.putback(token);
-            return expression();
+            tstream.putback(token); //put token into the buffer
+            return expression();    //goto grammary
     }
 }
 
@@ -25,30 +25,30 @@ void print_help(){
 void calculate(){
     while(std::cin)
         try{
-            std::cout << prompt;
-            Token token = tstream.get();
+            std::cout << prompt;    //print prompt symbol(> by default)
+            Token token = tstream.get();    //get the first one token
             while(token.kind == print) token = tstream.get();
-            if(token.kind == help) print_help();
-            else if(token.kind == quit) return;
+            if(token.kind == help) print_help();    //print help if it needs
+            else if(token.kind == quit) return; //exit point
             else{
-                tstream.putback(token);
-                std::cout << result << enterpoint() << std::endl;
+                tstream.putback(token); //put token into buffer
+                std::cout << result << enterpoint() << std::endl; //goto enterpoint
             }
         }
         catch(std::exception& e){
             std::cerr << e.what() << std::endl;
-            tstream.ignore(print);
+            tstream.ignore(print);  //cleaning cin if we have fault
         }
 } 
 
 int main()
 try{
-    symbolt.define_name("pi", M_PI, true);
-    symbolt.define_name("e", M_E, true);      
+    symbolt.define_name("pi", M_PI, true);  //defining constant pi
+    symbolt.define_name("e", M_E, true);    //defining constant e
 
     std::cout << "Enter expression (?/help for help)\n";
 
-    calculate();
+    calculate();    //start
     return 0;
 }
 catch(std::exception& e){

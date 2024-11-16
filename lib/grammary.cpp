@@ -1,6 +1,6 @@
 #include "grammary.h"
 
-double expression();
+double expression();    //forward declaration for primary
 
 double calc_sqrt(){
     char ch;
@@ -28,7 +28,7 @@ double calc_sin(){
     if(std::cin.get(ch) && ch != '(') throw std::runtime_error("'(' expected");
     std::cin.putback(ch);
     double expr = expression();
-    if(expr == 0 || expr == 180) return 0;
+    if(expr == 0 || expr == 180) return 0;  //return 0
     return sin(expr*M_PI/180);
 }
 
@@ -37,7 +37,7 @@ double calc_cos(){
     if(std::cin.get(ch) && ch != '(') throw std::runtime_error("'(' expected");
     std::cin.putback(ch);
     double expr = expression();
-    if(expr == 90 || expr == 270) return 0;
+    if(expr == 90 || expr == 270) return 0; //return 0 instead of 8.766e-11
     return cos(expr*M_PI/180);
 }
 
@@ -50,7 +50,7 @@ double handle_variable(Token& token){
         return symbolt.get_value(token.name);
     }
 }
-
+//numbers and parenthesis
 double primary(){
     Token token = tstream.get();
     switch(token.kind){
@@ -88,7 +88,7 @@ double primary(){
             throw std::runtime_error("primary expected");
     }
 }
-
+// factorial
 double secondary(){
     double lvalue = primary();
     Token token = tstream.get();
@@ -106,7 +106,7 @@ double secondary(){
         }
     }
 }
-
+// * and /
 double term(){
     double lvalue = secondary();
     Token token = tstream.get();
@@ -139,7 +139,7 @@ double term(){
         }
     }
 }
-
+// + and -
 double expression(){
     double lvalue = term();
     Token token = tstream.get();
@@ -160,16 +160,16 @@ double expression(){
         }
     }
 }
-
+//declare variable
 double declaration(){
-    Token token = tstream.get();
-    if(token.kind != name) throw std::runtime_error("name expected in declaration");
+    Token token = tstream.get(); //get variable name
+    if(token.kind != name) throw std::runtime_error("name expected in declaration");    //syntax check
     std::string var_name = token.name;
 
     Token token2 = tstream.get();
-    if(token2.kind != '=') throw std::runtime_error("= missing in declaration");
+    if(token2.kind != '=') throw std::runtime_error("= missing in declaration");    //syntax check
 
-    double val = expression();
-    symbolt.define_name(var_name, val);
+    double val = expression();  //get variable value
+    symbolt.define_name(var_name, val); //define variable
     return val;
 }
